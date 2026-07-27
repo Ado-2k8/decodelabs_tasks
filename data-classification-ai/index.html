@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iris Classifier — DecodeLabs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">DecodeLabs — Project 2</div>
+  <h1>Watch <span>K nearest neighbors</span> cast their vote.</h1>
+  <p class="subhead">
+    Every one of the 150 points below is a real Iris flower from the classic benchmark
+    dataset. Click anywhere on the plot to place a new sample — the model finds its
+    K closest neighbors by petal shape and classifies it by majority vote.
+  </p>
+
+  <div class="section-head">
+    <div class="section-num">1</div>
+    <h2>Neighborhood voting</h2>
+  </div>
+
+  <div class="visualizer">
+    <div class="plot-card">
+      <div class="plot-caption">petal length (x) vs petal width (y), in centimeters — click to place a sample</div>
+      <svg id="plotSvg" viewBox="0 0 560 420"></svg>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="controls">
+      <div class="control-block">
+        <div class="control-label">K (neighbors consulted)</div>
+        <div class="k-value" id="kValue">5</div>
+        <input type="range" id="kSlider" min="1" max="15" value="5">
+      </div>
+
+      <div class="control-block" id="voteCard" style="display:none;">
+        <div class="control-label">Vote tally</div>
+        <div class="vote-tally" id="voteTally"></div>
+        <div class="verdict">
+          <div class="verdict-label">Predicted class</div>
+          <div class="verdict-value" id="verdictValue">—</div>
+        </div>
+      </div>
+
+      <div class="control-block" id="hintCard">
+        <p class="hint-text">Click on the plot to drop a query point. Its K nearest neighbors will be connected with lines, and the majority species among them becomes the prediction.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-head">
+    <div class="section-num">2</div>
+    <h2>Trained pipeline report</h2>
+  </div>
+
+  <div class="report-grid">
+    <div class="metric-card">
+      <div class="metric-label">Accuracy</div>
+      <div class="metric-value" id="reportAccuracy">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">F1 score (macro)</div>
+      <div class="metric-value accent" id="reportF1">—</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-label">Train / test split</div>
+      <div class="metric-value" id="reportSplit" style="font-size:20px;">—</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="plot-caption" style="margin-bottom:16px;">Confusion matrix — actual species (rows) vs predicted (columns), k=5, held-out test set</div>
+    <table class="confusion" id="confusionTable"></table>
+  </div>
+</div>
+
+<footer>
+  <span>Iris Classifier — K-Nearest Neighbors, scikit-learn</span>
+  <span>150 samples · 4 features · 3 classes</span>
+</footer>
+
+<script src="script.js"></script>
+
+</body>
+</html>

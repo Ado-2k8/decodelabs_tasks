@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rule-Based Chatbot — DecodeLabs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #12101B;
+    --surface: #1C1830;
+    --surface-2: #241F3B;
+    --border: #322B4D;
+    --coral: #FF6B4A;
+    --coral-soft: rgba(255, 107, 74, 0.14);
+    --violet: #9D8CFF;
+    --violet-soft: rgba(157, 140, 255, 0.14);
+    --text: #F3F1FA;
+    --text-muted: #948FB0;
+    --text-dim: #5C567A;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 48px 20px 40px;
+    background-image:
+      radial-gradient(circle at 10% 0%, rgba(255,107,74,0.08), transparent 40%),
+      radial-gradient(circle at 90% 100%, rgba(157,140,255,0.08), transparent 40%);
+  }
+
+  .app {
+    width: 100%;
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 88px);
+    min-height: 560px;
+  }
+
+  /* ---------- Header ---------- */
+  header { margin-bottom: 22px; }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--coral);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .eyebrow::before { content: ""; width: 20px; height: 1px; background: var(--coral); }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(26px, 4vw, 34px);
+    letter-spacing: -0.01em;
+  }
+  h1 span { color: var(--violet); }
+
+  .subhead {
+    margin-top: 8px;
+    color: var(--text-muted);
+    font-size: 14.5px;
+    line-height: 1.55;
+    max-width: 520px;
+  }
+
+  /* ---------- Chat window ---------- */
+  .chat-window {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  .chat-log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .chat-log::-webkit-scrollbar { width: 8px; }
+  .chat-log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+  .msg-row { display: flex; flex-direction: column; max-width: 78%; animation: msgIn 0.28s ease; }
+  .msg-row.user { align-self: flex-end; align-items: flex-end; }
+  .msg-row.bot { align-self: flex-start; align-items: flex-start; }
+
+  @keyframes msgIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .bubble {
+    padding: 12px 16px;
+    border-radius: 14px;
+    font-size: 14.5px;
+    line-height: 1.5;
+  }
+  .msg-row.user .bubble {
+    background: var(--violet);
+    color: #14111F;
+    border-bottom-right-radius: 4px;
+  }
+  .msg-row.bot .bubble {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+
+  .rule-tag {
+    margin-top: 6px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--coral);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .rule-tag::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--coral);
+  }
+  .rule-tag.fallback { color: var(--text-dim); }
+  .rule-tag.fallback::before { background: var(--text-dim); }
+
+  .sender-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+    letter-spacing: 0.04em;
+  }
+
+  /* ---------- Input bar ---------- */
+  .input-bar {
+    display: flex;
+    gap: 10px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  #userInput {
+    flex: 1;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    padding: 12px 14px;
+    outline: none;
+  }
+  #userInput:focus { border-color: var(--violet); }
+  #userInput::placeholder { color: var(--text-dim); }
+
+  #sendBtn {
+    background: var(--coral);
+    color: #1B0E08;
+    border: none;
+    border-radius: 10px;
+    padding: 0 22px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14.5px;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  #sendBtn:hover { box-shadow: 0 6px 18px rgba(255,107,74,0.3); transform: translateY(-1px); }
+
+  .quick-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 20px 16px;
+  }
+  .quick-reply {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+    border: 1px dashed var(--border);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+    background: none;
+  }
+  .quick-reply:hover { border-color: var(--violet); color: var(--violet); }
+
+  footer {
+    margin-top: 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+  }
+
+  @media (max-width: 480px) {
+    .msg-row { max-width: 88%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="eyebrow">DecodeLabs — Project 1</div>
+    <h1>Rule-based chat, <span>rules exposed</span>.</h1>
+    <p class="subhead">
+      Every reply below is picked by a plain if-else chain. The tag under each
+      message names the exact rule that matched your input — no learning,
+      no black box, just control flow.
+    </p>
+  </header>
+
+  <div class="chat-window">
+    <div class="chat-log" id="chatLog"></div>
+    <div class="quick-replies" id="quickReplies"></div>
+    <div class="input-bar">
+      <input type="text" id="userInput" placeholder="Type a message…" autocomplete="off">
+      <button id="sendBtn">Send</button>
+    </div>
+  </div>
+
+  <footer>
+    <span>Rule-Based Chatbot — if-else control flow engine</span>
+    <span id="ruleCount">7 rules loaded</span>
+  </footer>
+</div>
+
+<script>
+const BOT_NAME = "Deco";
+
+const EXIT_COMMANDS = ["bye", "exit", "quit", "goodbye", "see you"];
+const GREETINGS = ["hi", "hello", "hey", "yo", "hola", "good morning", "good evening"];
+const THANKS = ["thanks", "thank you", "thx", "appreciate it"];
+const HOW_ARE_YOU = ["how are you", "how are you doing", "hows it going"];
+const NAME_QUESTIONS = ["what is your name", "whats your name", "who are you"];
+const HELP_REQUESTS = ["help", "what can you do", "commands"];
+
+const GREETING_RESPONSES = [
+  `Hello! I'm ${BOT_NAME}. How can I help you today?`,
+  "Hi there! What's on your mind?",
+  "Hey! Good to see you.",
+];
+const HOW_ARE_YOU_RESPONSES = [
+  "I'm just a set of if-else rules, but I'm running smoothly. Thanks for asking!",
+  "Doing great, thanks! How about you?",
+];
+const THANKS_RESPONSES = ["You're welcome!", "Anytime, happy to help.", "No problem at all."];
+const EXIT_RESPONSES = ["Goodbye! Have a great day.", "See you soon!", "Bye! Come back anytime."];
+const FALLBACK_RESPONSES = [
+  "Sorry, I didn't understand that. Could you rephrase?",
+  "I'm not sure I follow. Try asking me something else.",
+  "Hmm, that's outside what I know how to answer.",
+];
+
+const RULE_LABELS = {
+  greeting: "GREETING",
+  exit: "EXIT",
+  how_are_you: "HOW_ARE_YOU",
+  name: "NAME",
+  thanks: "THANKS",
+  help: "HELP",
+  fallback: "FALLBACK",
+};
+
+function cleanInput(raw) {
+  return raw.trim().toLowerCase().replace(/[.,!?;:'"()]/g, "");
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function getResponse(userInput) {
+  if (EXIT_COMMANDS.includes(userInput)) return { text: pick(EXIT_RESPONSES), rule: "exit" };
+  if (GREETINGS.includes(userInput)) return { text: pick(GREETING_RESPONSES), rule: "greeting" };
+  if (HOW_ARE_YOU.includes(userInput)) return { text: pick(HOW_ARE_YOU_RESPONSES), rule: "how_are_you" };
+  if (NAME_QUESTIONS.includes(userInput)) return { text: `I'm ${BOT_NAME}, your rule-based assistant.`, rule: "name" };
+  if (THANKS.includes(userInput)) return { text: pick(THANKS_RESPONSES), rule: "thanks" };
+  if (HELP_REQUESTS.includes(userInput)) {
+    return {
+      text: "I can respond to greetings, questions about my name, 'how are you', thanks, and I'll say goodbye when you're done. Try saying 'hello' or 'bye'.",
+      rule: "help",
+    };
+  }
+  return { text: pick(FALLBACK_RESPONSES), rule: "fallback" };
+}
+
+const chatLog = document.getElementById('chatLog');
+const userInputEl = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const quickReplies = document.getElementById('quickReplies');
+
+function appendMessage(sender, text, rule) {
+  const row = document.createElement('div');
+  row.className = `msg-row ${sender}`;
+
+  const label = document.createElement('div');
+  label.className = 'sender-label';
+  label.textContent = sender === 'user' ? 'You' : BOT_NAME;
+  row.appendChild(label);
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+  row.appendChild(bubble);
+
+  if (rule) {
+    const tag = document.createElement('div');
+    tag.className = 'rule-tag' + (rule === 'fallback' ? ' fallback' : '');
+    tag.textContent = 'rule matched: ' + RULE_LABELS[rule];
+    row.appendChild(tag);
+  }
+
+  chatLog.appendChild(row);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+function handleSend() {
+  const raw = userInputEl.value;
+  if (!raw.trim()) return;
+
+  appendMessage('user', raw);
+  userInputEl.value = '';
+
+  const cleaned = cleanInput(raw);
+  const { text, rule } = getResponse(cleaned);
+
+  setTimeout(() => {
+    appendMessage('bot', text, rule);
+  }, 280);
+}
+
+sendBtn.addEventListener('click', handleSend);
+userInputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleSend();
+});
+
+const STARTERS = ["hello", "what's your name?", "how are you?", "help", "bye"];
+STARTERS.forEach(s => {
+  const btn = document.createElement('button');
+  btn.className = 'quick-reply';
+  btn.textContent = s;
+  btn.onclick = () => { userInputEl.value = s; handleSend(); };
+  quickReplies.appendChild(btn);
+});
+
+appendMessage('bot', `Hi, I'm ${BOT_NAME}. Ask me something, or type "bye" to exit.`, "greeting");
+</script>
+
+</body>
+</html>
